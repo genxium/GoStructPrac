@@ -144,7 +144,7 @@ func main() {
 			RoomHeapMux.Lock()
 			defer RoomHeapMux.Unlock()
 			defer func() {
-			  // Will immediately execute `RoomHeapMux.Unlock()` and then `wg.Done()` in order if panics.
+				// Will immediately execute `RoomHeapMux.Unlock()` and then `wg.Done()` in order if panics.
 				if r := recover(); r != nil {
 					fmt.Println("Recovered from a panic: ", r)
 				}
@@ -153,10 +153,10 @@ func main() {
 			fmt.Printf("Successfully popped room %v for player %v.\n", room.ID, (*tPlyr).Name)
 			randomMillisToSleepAgain := rand.Intn(100) // [0, 100) milliseconds.
 			time.Sleep(time.Duration(randomMillisToSleepAgain) * time.Millisecond)
-      room.Players[(*tPlyr).ID] = tPlyr
-      room.Score = calRoomScore(len(room.Players), room.Capacity, room.State /* Not changed yet. */)
-      heap.Push(&pq, room)
-      (&pq).update(room, room.Score)
+			room.Players[(*tPlyr).ID] = tPlyr
+			room.Score = calRoomScore(len(room.Players), room.Capacity, room.State /* Not changed yet. */)
+			heap.Push(&pq, room)
+			(&pq).update(room, room.Score)
 		}(&testingPlayer)
 	}
 
