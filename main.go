@@ -46,14 +46,14 @@ type Room struct {
 }
 
 func (pR *Room) updateScore() {
-  pR.Score = calRoomScore(len(pR.Players), pR.Capacity, pR.State)
+	pR.Score = calRoomScore(len(pR.Players), pR.Capacity, pR.State)
 }
 
 func (pR *Room) addPlayerIfPossible(pPlayer *Player) bool {
-  // TODO: Check feasibility first.
-  pR.Players[pPlayer.ID] = pPlayer
-  pR.updateScore()
-  return true
+	// TODO: Check feasibility first.
+	pR.Players[pPlayer.ID] = pPlayer
+	pR.updateScore()
+	return true
 }
 
 var RoomHeapMux sync.Mutex
@@ -86,19 +86,17 @@ func (pq RoomHeap) Less(i, j int) bool {
 	return pq[i].Score > pq[j].Score
 }
 
-func (pPq *RoomHeap) Swap(i, j int) {
-	pq := *pPq
-	pq[i], pq[j] = pq[j], pq[i]
-	pq[i].Index = i
-	pq[j].Index = j
+func (pq *RoomHeap) Swap(i, j int) {
+	(*pq)[i], (*pq)[j] = (*pq)[j], (*pq)[i]
+	(*pq)[i].Index = i
+	(*pq)[j].Index = j
 }
 
 func (pq *RoomHeap) Push(pItem interface{}) {
 	// NOTE: Must take input param type `*Room` here.
 	n := len(*pq)
-	item := *(pItem.(*Room))
-	item.Index = n
-	*pq = append(*pq, item)
+	pItem.(*Room).Index = n
+	*pq = append(*pq, *(pItem.(*Room)))
 }
 
 func (pq *RoomHeap) Pop() interface{} {
@@ -181,7 +179,7 @@ func main() {
 			fmt.Printf("Successfully popped room %v for player %v.\n", pRoom.ID, tPlyr.Name)
 			randomMillisToSleepAgain := rand.Intn(100) // [0, 100) milliseconds.
 			time.Sleep(time.Duration(randomMillisToSleepAgain) * time.Millisecond)
-      pRoom.addPlayerIfPossible(tPlyr)
+			pRoom.addPlayerIfPossible(tPlyr)
 			heap.Push(&pq, pRoom)
 			(&pq).update(pRoom, pRoom.Score)
 			pq.PrintInOrder()
