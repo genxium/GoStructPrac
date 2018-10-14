@@ -45,6 +45,17 @@ type Room struct {
 	Index    int
 }
 
+func (pR *Room) updateScore() {
+  pR.Score = calRoomScore(len(pR.Players), pR.Capacity, pR.State)
+}
+
+func (pR *Room) addPlayerIfPossible(pPlayer *Player) bool {
+  // TODO: Check feasibility first.
+  pR.Players[pPlayer.ID] = pPlayer
+  pR.updateScore()
+  return true
+}
+
 var RoomHeapMux sync.Mutex
 
 // Reference https://golang.org/pkg/container/heap/.
@@ -108,10 +119,7 @@ func (pq *RoomHeap) Pop() interface{} {
 
 func (pq *RoomHeap) update(pItem *Room, Score float32) {
 	// NOTE: Must use type `*Room` here.
-	var item Room
-	item = *pItem
-	item.Score = Score
-	heap.Fix(pq, item.Index)
+	heap.Fix(pq, pItem.Index)
 }
 
 func main() {
@@ -170,14 +178,12 @@ func main() {
 				}
 			}()
 			pRoom := heap.Pop(&pq).(*Room)
-			room := (*pRoom)
-			fmt.Printf("Successfully popped room %v for player %v.\n", room.ID, (*tPlyr).Name)
+			fmt.Printf("Successfully popped room %v for player %v.\n", pRoom.ID, tPlyr.Name)
 			randomMillisToSleepAgain := rand.Intn(100) // [0, 100) milliseconds.
 			time.Sleep(time.Duration(randomMillisToSleepAgain) * time.Millisecond)
-			room.Players[(*tPlyr).ID] = tPlyr
-			room.Score = calRoomScore(len(room.Players), room.Capacity, room.State /* Not changed yet. */)
-			heap.Push(&pq, &room)
-			(&pq).update(&room, room.Score)
+      pRoom.addPlayerIfPossible(tPlyr)
+			heap.Push(&pq, pRoom)
+			(&pq).update(pRoom, pRoom.Score)
 			pq.PrintInOrder()
 		}(&testingPlayer)
 	}
