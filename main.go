@@ -31,7 +31,9 @@ var RoomState *roomState
 
 func calRoomScore(playerListCount int, capacity int, currentRoomState int) float32 {
 	x := float32(playerListCount) / float32(capacity)
-	return -7.8125*(x-0.2) + 5 - float32(currentRoomState)
+	d := (x - 0.2)
+	d2 := d * d
+	return -7.8125*d2 + 5 - float32(currentRoomState)
 }
 
 type Room struct {
@@ -47,6 +49,15 @@ var RoomHeapMux sync.Mutex
 
 // Reference https://golang.org/pkg/container/heap/.
 type RoomHeap []Room
+
+func (pPq *RoomHeap) PrintInOrder() {
+	pq := *pPq
+	fmt.Printf("The RoomHeap instance now contains:\n")
+	for i := 0; i < len(pq); i++ {
+		fmt.Printf("{index: %d, roomID: %d, score: %.2f} ", i, pq[i].ID, pq[i].Score)
+	}
+	fmt.Printf("\n")
+}
 
 /*
 Note that using `[]*Room` takes extra RAM for storing each "*Room", but could help postpone the RAM allocation of actual "Room" instance. We don't need this advantage in the current example.
@@ -64,15 +75,17 @@ func (pq RoomHeap) Less(i, j int) bool {
 	return pq[i].Score > pq[j].Score
 }
 
-func (pq RoomHeap) Swap(i, j int) {
+func (pPq *RoomHeap) Swap(i, j int) {
+	pq := *pPq
 	pq[i], pq[j] = pq[j], pq[i]
 	pq[i].Index = i
 	pq[j].Index = j
 }
 
-func (pq *RoomHeap) Push(x interface{}) {
+func (pq *RoomHeap) Push(pItem interface{}) {
+	// NOTE: Must take input param type `*Room` here.
 	n := len(*pq)
-	item := x.(Room)
+	item := *(pItem.(*Room))
 	item.Index = n
 	*pq = append(*pq, item)
 }
@@ -84,12 +97,19 @@ func (pq *RoomHeap) Pop() interface{} {
 		panic(fmt.Sprintf("Popping on an empty heap is not allowed.\n"))
 	}
 	item := old[n-1]
+	if item.Score <= float32(0.0) {
+		panic(fmt.Sprintf("No available room at the moment.\n"))
+	}
 	item.Index = -1 // for safety
 	*pq = old[0 : n-1]
-	return item
+	// NOTE: Must return instance which is directly castable to type `*Room` here.
+	return (&item)
 }
 
-func (pq *RoomHeap) update(item Room, Score float32) {
+func (pq *RoomHeap) update(pItem *Room, Score float32) {
+	// NOTE: Must use type `*Room` here.
+	var item Room
+	item = *pItem
 	item.Score = Score
 	heap.Fix(pq, item.Index)
 }
@@ -104,7 +124,7 @@ func main() {
 		IN_DISMISSAL:  9999999,
 	}
 
-	initialCountOfRooms := 20
+	initialCountOfRooms := 5
 	pq := make(RoomHeap, initialCountOfRooms)
 
 	roomCapacity := 4
@@ -149,14 +169,16 @@ func main() {
 					fmt.Println("Recovered from a panic: ", r)
 				}
 			}()
-			room := heap.Pop(&pq).(Room)
+			pRoom := heap.Pop(&pq).(*Room)
+			room := (*pRoom)
 			fmt.Printf("Successfully popped room %v for player %v.\n", room.ID, (*tPlyr).Name)
 			randomMillisToSleepAgain := rand.Intn(100) // [0, 100) milliseconds.
 			time.Sleep(time.Duration(randomMillisToSleepAgain) * time.Millisecond)
 			room.Players[(*tPlyr).ID] = tPlyr
 			room.Score = calRoomScore(len(room.Players), room.Capacity, room.State /* Not changed yet. */)
-			heap.Push(&pq, room)
-			(&pq).update(room, room.Score)
+			heap.Push(&pq, &room)
+			(&pq).update(&room, room.Score)
+			pq.PrintInOrder()
 		}(&testingPlayer)
 	}
 
