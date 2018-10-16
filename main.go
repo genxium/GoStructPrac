@@ -152,48 +152,48 @@ func main() {
 
 	var wasteChanWg sync.WaitGroup
 
-  /**
-  * The `wasteChanList` and `wasteChanListCloseSignalChan` together shows an approach to gracefully terminate a goroutine which 
-  * waits indefinitely for I/O of a channel.
-  *
-  * Note that `wasteChanListCloseSignalChan` need NOT be closed explicitly.
-  */
-  aWasteChan := make(chan interface{}, 1024)
-  anotherWasteChan := make(chan interface{}, 1024)
-  wasteChanList := make([]chan interface{}, 2)
+	/**
+	 * The `wasteChanList` and `wasteChanListCloseSignalChan` together shows an approach to gracefully terminate a goroutine which
+	 * waits indefinitely for I/O of a channel.
+	 *
+	 * Note that `wasteChanListCloseSignalChan` need NOT be closed explicitly.
+	 */
+	aWasteChan := make(chan interface{}, 1024)
+	anotherWasteChan := make(chan interface{}, 1024)
+	wasteChanList := make([]chan interface{}, 2)
 
-  wasteChanList[0] = aWasteChan
-  wasteChanList[1] = anotherWasteChan
+	wasteChanList[0] = aWasteChan
+	wasteChanList[1] = anotherWasteChan
 
-  wasteChanListCloseSignalChan := make(chan bool, 1)
+	wasteChanListCloseSignalChan := make(chan bool, 1)
 
-  wasteChanLoopFPS := 10
-  wasteChanLoopMillisPerFrame := 1000/wasteChanLoopFPS
-  wasteChanLoop := func(wasteChan chan interface{}, loopName string) error {
-    defer func() {
-      wasteChanWg.Done()
-      fmt.Printf("The loop for `%s` is ended.\n", loopName);
-    }()
-    for {
-      select {
-        case _ = <-wasteChan:
-        default:
-      }
-      select {
-        case trueOrFalse := <-wasteChanListCloseSignalChan:
-          fmt.Printf("Received %v from wasteChanListCloseSignalChan in loop for `%s`.\n", trueOrFalse, loopName);
-          if trueOrFalse == true {
-            return nil
-          }
-        default:
-      }
-      time.Sleep(time.Millisecond * time.Duration(wasteChanLoopMillisPerFrame))
-    }
-    return nil
-  }
-  wasteChanWg.Add(len(wasteChanList))
-  go wasteChanLoop(aWasteChan, "aWasteChan")
-  go wasteChanLoop(anotherWasteChan, "anotherWasteChan")
+	wasteChanLoopFPS := 10
+	wasteChanLoopMillisPerFrame := 1000 / wasteChanLoopFPS
+	wasteChanLoop := func(wasteChan chan interface{}, loopName string) error {
+		defer func() {
+			wasteChanWg.Done()
+			fmt.Printf("The loop for `%s` is ended.\n", loopName)
+		}()
+		for {
+			select {
+			case _ = <-wasteChan:
+			default:
+			}
+			select {
+			case trueOrFalse := <-wasteChanListCloseSignalChan:
+				fmt.Printf("Received %v from wasteChanListCloseSignalChan in loop for `%s`.\n", trueOrFalse, loopName)
+				if trueOrFalse == true {
+					return nil
+				}
+			default:
+			}
+			time.Sleep(time.Millisecond * time.Duration(wasteChanLoopMillisPerFrame))
+		}
+		return nil
+	}
+	wasteChanWg.Add(len(wasteChanList))
+	go wasteChanLoop(aWasteChan, "aWasteChan")
+	go wasteChanLoop(anotherWasteChan, "anotherWasteChan")
 
 	var mainWg sync.WaitGroup
 	initialCountOfPlayers := 100
@@ -236,9 +236,9 @@ func main() {
 	mainWg.Wait()
 	now = UnixtimeMilli()
 	fmt.Printf("All `goroutines of room joining` ended at %v.\n", now)
-  wasteChanListCloseSignalChan <- true
-  wasteChanListCloseSignalChan <- true
-  wasteChanWg.Wait()
+	wasteChanListCloseSignalChan <- true
+	wasteChanListCloseSignalChan <- true
+	wasteChanWg.Wait()
 	now = UnixtimeMilli()
 	fmt.Printf("Exiting at %v.\n", now)
 }
